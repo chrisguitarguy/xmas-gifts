@@ -16,7 +16,7 @@ def parse_args(args=None):
     p.add_argument('-c', '--count', type=int, default=1,
         help='The number gifts each pearson should received')
     p.add_argument('filename', help='The input file. Should be a CSV with one family per line.')
-    p.add_argument('-r', '--retries', type=int, default=5,
+    p.add_argument('-r', '--retries', type=int, default=100,
         help='The maximum number or retries the match maker should perform')
 
     return p.parse_args(args)
@@ -33,25 +33,25 @@ class MatchMaker(object):
         self.gift_count = gift_count
         self.counters = collections.defaultdict(int)
 
-    def make_givers(self, family):
-        givers = copy.deepcopy(self.families)
-        del givers[family]
-        givers = list(set(itertools.chain(*givers)) - set(filter(lambda x: self.counters[x] >= self.gift_count, self.counters)))
-        random.shuffle(givers)
+    def make_recipients(self, family):
+        possible = copy.deepcopy(self.families)
+        del possible[family]
+        possible = list(set(itertools.chain(*possible)) - set(filter(lambda x: self.counters[x] >= self.gift_count, self.counters)))
+        random.shuffle(possible)
 
-        return givers
+        return possible[:self.gift_count]
 
     def match_person(self, family, person):
-        give_to = self.make_givers(family)[:self.gift_count]
+        recipients = self.make_recipients(family)
         # the filter for people that have gifts sometimes yields less than two
         # people. Has to do with odd numbers + the "randomness" of assinging gifts.
-        if len(give_to) != self.gift_count:
+        if len(recipients) != self.gift_count:
             raise CouldNotMatch('Could not allocate {} people for {}'.format(self.gift_count, person))
 
-        for person in give_to:
+        for person in recipients:
             self.counters[person] += 1
 
-        return give_to
+        return recipients
 
     def match(self):
         out = dict()
