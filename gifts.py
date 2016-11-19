@@ -8,6 +8,7 @@ import copy
 import csv
 import itertools
 import random
+import sys
 
 
 def parse_args(args=None):
@@ -67,7 +68,7 @@ class MatchMaker(object):
             except CouldNotMatch:
                 continue
 
-        raise CouldNotMatch('Could not generate matches after {} retries'.format(retries))
+        return None
 
 
 def read_input(filename):
@@ -82,11 +83,17 @@ def main(args=None):
     families = read_input(args.filename);
     assert len(families) > 0, 'Cannot generate gifts for no families!'
 
-    match = MatchMaker(families, args.count)
+    matcher = MatchMaker(families, args.count)
+    matches = matcher(args.retries)
 
-    for person, recipients in match(args.retries).items():
+    if matches is None:
+        print('Could not generate matches after {} retries.'.format(args.retries), file=sys.stderr)
+        return 1
+
+    for person, recipients in matches.items():
         print(person, '->', ', '.join(recipients))
 
+    return 0
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
